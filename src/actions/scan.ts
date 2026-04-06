@@ -19,6 +19,12 @@ type ScanResult = {
     liquidityUsd: number
     freshWalletsInTop5: number
     isSafeToTrade: boolean
+    holdersList: Array<{
+      address: string
+      tokenAmount: number
+      solBalance: number
+      ageInDays: number
+    }>
   }
 }
 
@@ -35,7 +41,8 @@ export async function getWalletForensics(walletString: string) {
   if (sigsRes.length > 0) {
     const oldestTx = sigsRes[sigsRes.length - 1]
     
-    if (oldestTx.blockTime) {
+    // Fix: Add the optional chaining and explicit check
+    if (oldestTx && oldestTx.blockTime) {
       const now = Math.floor(Date.now() / 1000)
       const diffInSeconds = now - Number(oldestTx.blockTime)
       ageInDays = diffInSeconds / 86400
@@ -53,7 +60,6 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
   try {
     const mint = address(mintAddressString)
 
-    // 1. Fetch all basic data simultaneously
     const [holdersResponse, supplyResponse, socialData, securityData] = await Promise.all([
       rpc.getTokenLargestAccounts(mint).send(),
       rpc.getTokenSupply(mint).send(),
@@ -70,30 +76,34 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
 
     const totalSupply = Number(totalSupplyStr)
 
-    // 2. Calculate Top 5 Percentage & Check Wallets
     let top5Amount = 0
     let freshWalletsCount = 0
+    const holdersList = []
 
-    // We use a simple loop with await to check each wallet's age
     for (const holder of topHolders) {
-      top5Amount += Number(holder.amount)
+      const amount = Number(holder.amount)
+      top5Amount += amount
+      
       const forensics = await getWalletForensics(holder.address.toString())
+      
       if (forensics.isFreshWallet) {
         freshWalletsCount += 1
       }
+
+      // Add the detailed data to your new array
+      holdersList.push({
+        address: holder.address.toString(),
+        tokenAmount: amount,
+        solBalance: forensics.solBalance,
+        ageInDays: forensics.ageInDays
+      })
     }
 
     const topHoldersPercentage = (top5Amount / totalSupply) * 100
     const isRugPullRisk = topHoldersPercentage > 50 || freshWalletsCount >= 3
 
-    // 3. Determine if it passes all filters
-    const isSafeToTrade = 
-      securityData.isMintRevoked && 
-      securityData.isFreezeRevoked && 
-      socialData.hasTelegram && 
-      !isRugPullRisk
+    const isSafeToTrade = socialData.hasTelegram && !isRugPullRisk
 
-    // 4. Save to database
     await db.insert(tokens)
       .values({ mintAddress: mintAddressString })
       .onConflictDoNothing()
@@ -102,7 +112,6 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
       mintAddress: mintAddressString,
       topHoldersPercentage: topHoldersPercentage.toFixed(2),
       isRugPullRisk,
-      // Make sure these match the new columns you add to schema.ts
       hasTelegram: socialData.hasTelegram,
       isMintRevoked: securityData.isMintRevoked,
       isFreezeRevoked: securityData.isFreezeRevoked,
@@ -119,7 +128,8 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
         isFreezeRevoked: securityData.isFreezeRevoked,
         liquidityUsd: socialData.liquidityUsd,
         freshWalletsInTop5: freshWalletsCount,
-        isSafeToTrade
+        isSafeToTrade,
+        holdersList
       }
     }
   } catch (error) {
