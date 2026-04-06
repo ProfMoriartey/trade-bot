@@ -13,5 +13,9 @@ export const tokenScans = pgTable("token_scans", {
   mintAddress: text("mint_address").notNull(),
   topHoldersPercentage: numeric("top_holders_percentage"),
   isRugPullRisk: boolean("is_rug_pull_risk").default(false),
-  scannedAt: timestamp("scanned_at").defaultNow().notNull()
+  scannedAt: timestamp("scanned_at").defaultNow().notNull(),
+  hasTelegram: boolean("hasTelegram").default(false), 
+  hasTwitter: boolean("hasTwitter").default(false),
+  isMintRevoked: boolean("isMintRevoked").default(false),
+  isFreezeRevoked: boolean("isFreezeRevoked").default(false),
 })

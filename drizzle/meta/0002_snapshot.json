@@ -1,0 +1,144 @@
+{
+  "id": "c7317623-fbd5-459a-ba8b-57dc018060bd",
+  "prevId": "3c6b49d8-600d-4f79-a346-297007aa1d19",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.token_scans": {
+      "name": "token_scans",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mint_address": {
+          "name": "mint_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "top_holders_percentage": {
+          "name": "top_holders_percentage",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_rug_pull_risk": {
+          "name": "is_rug_pull_risk",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "scanned_at": {
+          "name": "scanned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "hasTelegram": {
+          "name": "hasTelegram",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "hasTwitter": {
+          "name": "hasTwitter",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "isMintRevoked": {
+          "name": "isMintRevoked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "isFreezeRevoked": {
+          "name": "isFreezeRevoked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tokens": {
+      "name": "tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mint_address": {
+          "name": "mint_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tokens_mint_address_unique": {
+          "name": "tokens_mint_address_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "mint_address"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

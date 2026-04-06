@@ -8,6 +8,20 @@
       "when": 1775476699513,
       "tag": "0000_talented_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775478657772,
+      "tag": "0001_spooky_tusk",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775478724018,
+      "tag": "0002_rainy_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

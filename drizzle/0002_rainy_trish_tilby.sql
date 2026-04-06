@@ -1,0 +1,1 @@
+ALTER TABLE "token_scans" ADD COLUMN "hasTwitter" boolean DEFAULT false;
