@@ -1,26 +1,17 @@
-// Example model schema from the Drizzle docs
-// https://orm.drizzle.team/docs/sql-schema-declaration
+import { pgTable, serial, text, timestamp, numeric, boolean } from "drizzle-orm/pg-core"
 
-import { index, pgTableCreator } from "drizzle-orm/pg-core";
+export const tokens = pgTable("tokens", {
+  id: serial("id").primaryKey(),
+  mintAddress: text("mint_address").notNull().unique(),
+  name: text("name"),
+  symbol: text("symbol"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+})
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-export const createTable = pgTableCreator((name) => `trade-bot_${name}`);
-
-export const posts = createTable(
-  "post",
-  (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    name: d.varchar({ length: 256 }),
-    createdAt: d
-      .timestamp({ withTimezone: true })
-      .$defaultFn(() => /* @__PURE__ */ new Date())
-      .notNull(),
-    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-  }),
-  (t) => [index("name_idx").on(t.name)],
-);
+export const tokenScans = pgTable("token_scans", {
+  id: serial("id").primaryKey(),
+  mintAddress: text("mint_address").notNull(),
+  topHoldersPercentage: numeric("top_holders_percentage"),
+  isRugPullRisk: boolean("is_rug_pull_risk").default(false),
+  scannedAt: timestamp("scanned_at").defaultNow().notNull()
+})
