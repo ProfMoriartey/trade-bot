@@ -28,21 +28,38 @@ type ScanResult = {
   }
 }
 
-export async function getWalletForensics(walletString: string) {
+// 1. Explicitly type the expected responses to remove 'any' bleed
+interface TokenSupply {
+  value: { amount: string }
+}
+
+interface TokenLargestAccounts {
+  value: Array<{ address: { toString: () => string }; amount: string }>
+}
+
+interface SignatureData {
+  blockTime?: number | null
+}
+
+interface BalanceData {
+  value: bigint | number | string
+}
+
+export async function getWalletForensics(walletString: string): Promise<{ solBalance: number, ageInDays: number, isFreshWallet: boolean }> {
   const wallet = address(walletString)
 
-  const balanceRes = await rpc.getBalance(wallet).send()
+  const balanceRes = (await rpc.getBalance(wallet).send()) as unknown as BalanceData
   const solBalance = Number(balanceRes.value) / 1_000_000_000
 
-  const sigsRes = await rpc.getSignaturesForAddress(wallet, { limit: 1000 }).send()
+  const sigsRes = (await rpc.getSignaturesForAddress(wallet, { limit: 1000 }).send()) as unknown as SignatureData[]
   
   let ageInDays = 0
   
   if (sigsRes.length > 0) {
     const oldestTx = sigsRes[sigsRes.length - 1]
     
-    // Fix: Add the optional chaining and explicit check
-    if (oldestTx && oldestTx.blockTime) {
+    // Fix: Use optional chaining syntax
+    if (oldestTx?.blockTime) {
       const now = Math.floor(Date.now() / 1000)
       const diffInSeconds = now - Number(oldestTx.blockTime)
       ageInDays = diffInSeconds / 86400
@@ -60,12 +77,18 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
   try {
     const mint = address(mintAddressString)
 
-    const [holdersResponse, supplyResponse, socialData, securityData] = await Promise.all([
-      rpc.getTokenLargestAccounts(mint).send(),
-      rpc.getTokenSupply(mint).send(),
-      getSocialsAndLiquidity(mintAddressString),
-      getSecurityFilters(mintAddressString)
-    ])
+    // Run parallel fetches
+    const holdersRaw = await rpc.getTokenLargestAccounts(mint).send()
+    const supplyRaw = await rpc.getTokenSupply(mint).send()
+    const socialRaw = await getSocialsAndLiquidity(mintAddressString)
+    const securityRaw = await getSecurityFilters(mintAddressString)
+
+    // 2. Cast the raw responses to strict types to satisfy ESLint
+    const holdersResponse = holdersRaw as unknown as TokenLargestAccounts
+    const supplyResponse = supplyRaw as unknown as TokenSupply
+    
+    const socialData = socialRaw as { hasTelegram: boolean; hasTwitter: boolean; liquidityUsd: number }
+    const securityData = securityRaw as { isMintRevoked: boolean; isFreezeRevoked: boolean }
 
     const topHolders = holdersResponse.value.slice(0, 5)
     const totalSupplyStr = supplyResponse.value.amount
@@ -84,15 +107,15 @@ export async function scanAndSaveToken(mintAddressString: string): Promise<ScanR
       const amount = Number(holder.amount)
       top5Amount += amount
       
-      const forensics = await getWalletForensics(holder.address.toString())
+      const holderAddressStr = holder.address.toString()
+      const forensics = await getWalletForensics(holderAddressStr)
       
       if (forensics.isFreshWallet) {
         freshWalletsCount += 1
       }
 
-      // Add the detailed data to your new array
       holdersList.push({
-        address: holder.address.toString(),
+        address: holderAddressStr,
         tokenAmount: amount,
         solBalance: forensics.solBalance,
         ageInDays: forensics.ageInDays

@@ -1,25 +1,62 @@
 "use server"
 
+// 1. Define DexScreener Types
+interface SocialLink {
+  type: string;
+  url: string;
+}
+
+interface DexPair {
+  info?: {
+    socials?: SocialLink[];
+  };
+  liquidity?: {
+    usd?: number;
+  };
+}
+
+interface DexScreenerResponse {
+  pairs?: DexPair[] | null;
+}
+
 export async function getSocialsAndLiquidity(mintAddress: string) {
   const url = `https://api.dexscreener.com/latest/dex/tokens/${mintAddress}`
   const response = await fetch(url)
-  const data = await response.json()
+  
+  // Cast the response
+  const data = (await response.json()) as DexScreenerResponse
 
   if (!data.pairs || data.pairs.length === 0) {
     return { hasTelegram: false, hasTwitter: false, liquidityUsd: 0 }
   }
 
+  // Use optional chaining
   const topPair = data.pairs[0]
-  const socials = topPair.info?.socials || []
+  
+  // Use ?? instead of || to satisfy the ESLint rule
+  const socials = topPair?.info?.socials ?? []
 
-  const hasTelegram = socials.some((s: any) => s.type === "telegram")
-  const hasTwitter = socials.some((s: any) => s.type === "twitter")
+  // TypeScript now knows 's' is of type SocialLink
+  const hasTelegram = socials.some((s) => s.type === "telegram")
+  const hasTwitter = socials.some((s) => s.type === "twitter")
 
   return {
     hasTelegram,
     hasTwitter,
-    liquidityUsd: topPair.liquidity?.usd || 0
+    liquidityUsd: topPair?.liquidity?.usd ?? 0
   }
+}
+
+// 2. Define Helius Types
+interface TokenInfo {
+  mint_authority?: string | null;
+  freeze_authority?: string | null;
+}
+
+interface HeliusAssetResponse {
+  result?: {
+    token_info?: TokenInfo;
+  };
 }
 
 export async function getSecurityFilters(mintAddress: string) {
@@ -40,15 +77,17 @@ export async function getSecurityFilters(mintAddress: string) {
     })
   })
 
-  const data = await response.json()
+  // Cast the response
+  const data = (await response.json()) as HeliusAssetResponse
   const tokenInfo = data.result?.token_info
 
   if (!tokenInfo) {
     return { isMintRevoked: false, isFreezeRevoked: false }
   }
 
-  const hasMintAuthority = tokenInfo.mint_authority !== null
-  const hasFreezeAuthority = tokenInfo.freeze_authority !== null
+  // Explicit null checks for strict boolean assignment
+  const hasMintAuthority = tokenInfo.mint_authority !== null && tokenInfo.mint_authority !== undefined
+  const hasFreezeAuthority = tokenInfo.freeze_authority !== null && tokenInfo.freeze_authority !== undefined
 
   return {
     isMintRevoked: !hasMintAuthority,
