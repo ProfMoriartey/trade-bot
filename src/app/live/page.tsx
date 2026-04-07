@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getRecentScans } from "~/actions/feed";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { ShieldCheck, AlertTriangle, Clock, RefreshCw } from "lucide-react";
 
@@ -32,13 +32,15 @@ export default function LiveFeedPage() {
   };
 
   useEffect(() => {
-    // Initial fetch
-    fetchFeed();
+    // Use 'void' to mark the floating promise as intentional
+    void fetchFeed();
 
-    // Set up the active listener (polling every 3 seconds)
     let interval: NodeJS.Timeout;
     if (isPolling) {
-      interval = setInterval(fetchFeed, 3000);
+      // Wrap the async call in a synchronous callback
+      interval = setInterval(() => {
+        void fetchFeed();
+      }, 3000);
     }
 
     return () => clearInterval(interval);
