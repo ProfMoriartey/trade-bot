@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server"
 
+// Define a generic array type to satisfy strict TypeScript rules during debugging
+type HeliusDebugPayload = Array<Record<string, unknown>>
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    // Cast the incoming JSON to our generic array
+    const body = (await req.json()) as HeliusDebugPayload
     
-    // Log the entire array length to see if we get anything at all
+    // Now TypeScript knows 'body' is an array and has a .length property
     console.log(`Received Webhook! Array length: ${body.length}`)
 
-    // Dump the first transaction to the console so we can inspect the JSON structure
+    // It also knows body[0] is safe to access if length > 0
     if (body.length > 0) {
       console.dir(body[0], { depth: null, colors: true })
     }
